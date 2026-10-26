@@ -251,6 +251,90 @@ document.getElementById("refreshOrders").addEventListener(
   loadOrders
 );
   
+async function loadDeliveryBoys() {
+  const list = document.getElementById("deliveryList");
+  const message = document.getElementById("deliveryMessage");
+
+  message.textContent = "Delivery Boys load ho rahe hain...";
+  list.replaceChildren();
+
+  try {
+    const snapshot = await db.ref("deliveryBoys").once("value");
+
+    if (!snapshot.exists()) {
+      message.textContent = "Abhi koi Delivery Boy signup nahi hua.";
+      return;
+    }
+
+    let count = 0;
+
+    snapshot.forEach(child => {
+      const boy = child.val();
+      const uid = child.key;
+      count++;
+
+      const card = document.createElement("div");
+      card.style.cssText =
+        "border:1px solid #e2cdbb;padding:15px;margin:12px 0;border-radius:10px;overflow-wrap:anywhere;";
+
+      const name = document.createElement("h3");
+      name.textContent = boy.name || "Naam nahi diya";
+      card.appendChild(name);
+
+      const details = document.createElement("p");
+      details.textContent =
+        "Mobile: " + (boy.phone || "-") +
+        " | Email: " + (boy.email || "-");
+      card.appendChild(details);
+
+      const status = document.createElement("p");
+      status.textContent = "Status: " + (boy.status || "pending");
+      card.appendChild(status);
+
+      if (boy.status === "pending") {
+        const approveButton = document.createElement("button");
+        approveButton.type = "button";
+        approveButton.textContent = "Approve Delivery Boy";
+        card.appendChild(approveButton);
+
+        approveButton.addEventListener("click", async () => {
+          approveButton.disabled = true;
+          approveButton.textContent = "Approve ho raha hai...";
+
+          try {
+            await db.ref("deliveryBoys/" + uid + "/status")
+              .set("approved");
+
+            status.textContent = "Status: approved";
+            approveButton.remove();
+            message.textContent =
+              (boy.name || "Delivery Boy") + " approve ho gaya!";
+          } catch (error) {
+            console.error(error);
+            message.textContent =
+              "Approve nahi hua. Firebase Rules check karein.";
+            approveButton.disabled = false;
+            approveButton.textContent = "Dobara Try Karein";
+          }
+        });
+      }
+
+      list.appendChild(card);
+    });
+
+    message.textContent = "Kul Delivery Boys: " + count;
+
+  } catch (error) {
+    console.error(error);
+    message.textContent =
+      "List load nahi hui. Admin login aur Firebase Rules check karein.";
+  }
+}
+
+document.getElementById("refreshDeliveryBoys")
+  .addEventListener("click", loadDeliveryBoys);
+
+  
 
 </script>
 
