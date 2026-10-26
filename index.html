@@ -107,6 +107,8 @@ document.getElementById("ordersDashboard").style.display = "block";
 document.getElementById("ordersMessage").textContent =
   "Login ho gaya. Ab Firebase se orders load karenge.";
 
+      await loadOrders();
+
     } catch (error) {
       console.error(error);
       message.textContent = "Login nahi hua. Email, password aur Firebase settings check karein.";
@@ -247,7 +249,7 @@ document.getElementById("refreshOrders").addEventListener(
   "click",
   loadOrders
 );
-  loadOrders();
+  
 
 </script>
 
