@@ -122,7 +122,7 @@ async function loadOrders() {
   ordersList.replaceChildren();
 
   try {
-    const snapshot = await db.ref("orders").get();
+    const snapshot = await db.ref("orders").once("value");
 
     if (!snapshot.exists()) {
       ordersMessage.textContent = "Abhi koi order nahi mila.";
