@@ -105,7 +105,15 @@
     }
   });
 </script>
-</body>
+
+<section id="ordersDashboard" style="display:none; max-width:900px; margin:20px auto; padding:20px; background:white; border-radius:12px;">
+  <h2>📦 Customer Orders</h2>
+  <p>यहाँ ग्राहकों के ऑर्डर दिखाई देंगे।</p>
+  <button id="refreshOrders" type="button">🔄 Orders Refresh करें</button>
+  <p id="ordersMessage" role="status">Orders लोड होने की प्रतीक्षा है...</p>
+  <div id="ordersList"></div>
+</section>
+
 
 </body>
 </html>
