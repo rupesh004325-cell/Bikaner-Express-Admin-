@@ -56,5 +56,55 @@
 
     <p id="message" role="status"></p>
   </div>
+
+  
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDhumnH7lRnz_LVJLTMklksusBPaDAkCh4",
+    authDomain: "bikaner-express-537a2.firebaseapp.com",
+    databaseURL: "https://bikaner-express-537a2-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "bikaner-express-537a2",
+    storageBucket: "bikaner-express-537a2.firebasestorage.app",
+    messagingSenderId: "852964791053",
+    appId: "1:852964791053:web:94c129e58b72a375661644"
+  };
+
+  if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+  }
+
+  const auth = firebase.auth();
+  const ADMIN_UID = "i8dtxW327zN1onqskZ7MfK3QDcc2";
+
+  document.getElementById("loginForm").addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const message = document.getElementById("message");
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+
+    message.textContent = "Login ho raha hai...";
+
+    try {
+      const result = await auth.signInWithEmailAndPassword(email, password);
+
+      if (result.user.uid !== ADMIN_UID) {
+        await auth.signOut();
+        message.textContent = "Access denied: yeh Admin account nahi hai.";
+        return;
+      }
+
+      message.textContent = "Admin login successful! Agle step mein orders dikhayenge.";
+    } catch (error) {
+      console.error(error);
+      message.textContent = "Login nahi hua. Email, password aur Firebase settings check karein.";
+    }
+  });
+</script>
+</body>
+
 </body>
 </html>
