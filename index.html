@@ -112,6 +112,142 @@ document.getElementById("ordersMessage").textContent =
       message.textContent = "Login nahi hua. Email, password aur Firebase settings check karein.";
     }
   });
+
+  
+async function loadOrders() {
+  const ordersList = document.getElementById("ordersList");
+  const ordersMessage = document.getElementById("ordersMessage");
+
+  ordersMessage.textContent = "Orders load ho rahe hain...";
+  ordersList.replaceChildren();
+
+  try {
+    const snapshot = await db.ref("orders").get();
+
+    if (!snapshot.exists()) {
+      ordersMessage.textContent = "Abhi koi order nahi mila.";
+      return;
+    }
+
+    let count = 0;
+
+    snapshot.forEach(customerSnapshot => {
+      customerSnapshot.forEach(orderSnapshot => {
+        const order = orderSnapshot.val();
+        const orderKey = orderSnapshot.key;
+        const customerUid = customerSnapshot.key;
+
+        count++;
+
+        const card = document.createElement("div");
+        card.style.cssText =
+          "border:1px solid #e2cdbb;padding:15px;margin:15px 0;border-radius:10px;overflow-wrap:anywhere;";
+
+        const title = document.createElement("h3");
+        title.textContent = "Order: " + (order.id || orderKey);
+        card.appendChild(title);
+
+        const details = document.createElement("p");
+        details.textContent =
+          "Naam: " + (order.name || "-") +
+          " | Mobile: " + (order.phone || "-") +
+          " | Total: ₹" + (order.total ?? 0);
+        card.appendChild(details);
+
+        const address = document.createElement("p");
+        address.textContent = "Address: " + (order.address || "-");
+        card.appendChild(address);
+
+        const products = document.createElement("p");
+        products.textContent = "Items: " +
+          (Array.isArray(order.items)
+            ? order.items.map(item =>
+                item.name + " × " + item.quantity
+              ).join(", ")
+            : "Order items");
+        card.appendChild(products);
+
+        const statusLabel = document.createElement("label");
+        statusLabel.textContent = "Order status: ";
+        const select = document.createElement("select");
+        select.style.cssText =
+          "width:100%;padding:10px;margin-top:8px;";
+
+        [
+          "New",
+          "Accepted",
+          "Preparing",
+          "Out for Delivery",
+          "Delivered",
+          "Cancelled"
+        ].forEach(status => {
+          const option = document.createElement("option");
+          option.value = status;
+          option.textContent = status;
+          select.appendChild(option);
+        });
+
+        select.value = [
+          "New", "Accepted", "Preparing",
+          "Out for Delivery", "Delivered", "Cancelled"
+        ].includes(order.status) ? order.status : "New";
+
+        statusLabel.appendChild(select);
+        card.appendChild(statusLabel);
+
+        const saveButton = document.createElement("button");
+        saveButton.type = "button";
+        saveButton.textContent = "Status Save Karein";
+        card.appendChild(saveButton);
+
+        saveButton.addEventListener("click", async () => {
+          saveButton.disabled = true;
+          try {
+            await db.ref(
+              "orders/" + customerUid + "/" + orderKey + "/status"
+            ).set(select.value);
+
+            order.status = select.value;
+            ordersMessage.textContent =
+              "Order " + (order.id || orderKey) + " ka status save ho gaya.";
+          } catch (error) {
+            console.error(error);
+            ordersMessage.textContent =
+              "Status save nahi hua. Firebase Rules check karein.";
+          } finally {
+            saveButton.disabled = false;
+          }
+        });
+
+        const currentStatus = document.createElement("p");
+        currentStatus.textContent =
+          "Abhi ka status: " + (order.status || "New");
+        card.appendChild(currentStatus);
+
+        select.addEventListener("change", () => {
+          currentStatus.textContent = "Naya status: " + select.value;
+        });
+
+        ordersList.appendChild(card);
+      });
+    });
+
+    ordersMessage.textContent = count
+      ? "Kul orders: " + count
+      : "Abhi koi order nahi mila.";
+
+  } catch (error) {
+    console.error("Orders load error:", error);
+    ordersMessage.textContent =
+      "Orders load nahi hue. Internet aur Firebase Rules check karein.";
+  }
+}
+
+document.getElementById("refreshOrders").addEventListener(
+  "click",
+  loadOrders
+);
+
 </script>
 
 <section id="ordersDashboard" style="display:none; max-width:900px; margin:20px auto; padding:20px; background:white; border-radius:12px;">
