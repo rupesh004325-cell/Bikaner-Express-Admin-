@@ -109,8 +109,9 @@ document.getElementById("ordersMessage").textContent =
   "Login ho gaya. Ab Firebase se orders load karenge.";
 
       
-      await loadOrders();
+      
 await loadDeliveryBoys();
+      await loadOrders();
 
     } catch (error) {
       console.error(error);
