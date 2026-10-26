@@ -201,6 +201,83 @@ async function loadOrders() {
         statusLabel.appendChild(select);
         card.appendChild(statusLabel);
 
+        const deliveryLabel = document.createElement("label");
+deliveryLabel.textContent = "Delivery Boy चुनें:";
+
+const deliverySelect = document.createElement("select");
+deliverySelect.style.cssText =
+  "width:100%;padding:10px;margin:10px 0;";
+
+const defaultOption = document.createElement("option");
+defaultOption.value = "";
+defaultOption.textContent = "Delivery Boy चुनें";
+deliverySelect.appendChild(defaultOption);
+
+approvedDeliveryBoys.forEach(boy => {
+  const option = document.createElement("option");
+  option.value = boy.uid;
+  option.textContent = boy.name + " (" + boy.phone + ")";
+  deliverySelect.appendChild(option);
+});
+
+deliveryLabel.appendChild(deliverySelect);
+card.appendChild(deliveryLabel);
+
+const assignButton = document.createElement("button");
+assignButton.type = "button";
+assignButton.textContent = "Assign Order";
+card.appendChild(assignButton);
+
+assignButton.addEventListener("click", async () => {
+  const deliveryUid = deliverySelect.value;
+
+  if (!deliveryUid) {
+    ordersMessage.textContent = "Pehle Delivery Boy chunein.";
+    return;
+  }
+
+  const selectedBoy = approvedDeliveryBoys.find(
+    boy => boy.uid === deliveryUid
+  );
+
+  if (!selectedBoy) {
+    ordersMessage.textContent = "Approved Delivery Boy nahi mila.";
+    return;
+  }
+
+  assignButton.disabled = true;
+  assignButton.textContent = "Assign ho raha hai...";
+
+  try {
+    await db.ref(
+      "assignedOrders/" + deliveryUid + "/" + orderKey
+    ).set({
+      orderId: orderKey,
+      customerUid: customerUid,
+      name: order.name || "",
+      phone: order.phone || "",
+      address: order.address || "",
+      items: order.items || [],
+      total: order.total || 0,
+      shop: order.shop || "",
+      status: "Assigned",
+      assignedAt: Date.now()
+    });
+
+    ordersMessage.textContent =
+      "Order " + (order.id || orderKey) +
+      " " + selectedBoy.name + " ko assign ho gaya.";
+
+    assignButton.textContent = "Assigned ✓";
+  } catch (error) {
+    console.error(error);
+    ordersMessage.textContent =
+      "Assign nahi hua. Firebase Rules ya internet check karein.";
+    assignButton.disabled = false;
+    assignButton.textContent = "Dobara Try Karein";
+  }
+});
+
         const saveButton = document.createElement("button");
         saveButton.type = "button";
         saveButton.textContent = "Status Save Karein";
@@ -260,7 +337,7 @@ async function loadDeliveryBoys() {
 
   message.textContent = "Delivery Boys load ho rahe hain...";
   list.replaceChildren();
-
+approvedDeliveryBoys = [];
   try {
     const snapshot = await db.ref("deliveryBoys").once("value");
 
@@ -275,6 +352,14 @@ async function loadDeliveryBoys() {
       const boy = child.val();
       const uid = child.key;
       count++;
+
+      if (boy.status === "approved") {
+  approvedDeliveryBoys.push({
+    uid: uid,
+    name: boy.name || "Delivery Boy",
+    phone: boy.phone || ""
+  });
+}
 
       const card = document.createElement("div");
       card.style.cssText =
