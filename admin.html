@@ -11,31 +11,28 @@
       font-family: Arial, sans-serif;
       background: #fff8ed;
       margin: 0;
-      padding: 20px;
+      padding: 12px;
       color: #382417;
     }
 
     .card, .dashboard {
       max-width: 900px;
-      margin: 20px auto;
-      padding: 24px;
+      margin: 18px auto;
+      padding: 20px;
       background: white;
       border-radius: 16px;
       box-shadow: 0 4px 16px #0001;
+      box-sizing: border-box;
     }
 
-    .card {
-      max-width: 500px;
-      margin: 40px auto;
-    }
-
+    .card { max-width: 500px; }
     h1 { color: #a94313; }
 
     input, button, select {
       box-sizing: border-box;
       width: 100%;
-      padding: 13px;
-      margin-top: 12px;
+      padding: 12px;
+      margin-top: 10px;
       border-radius: 8px;
       font-size: 16px;
     }
@@ -43,6 +40,7 @@
     input, select {
       border: 1px solid #d8c8b8;
       background: white;
+      color: #382417;
     }
 
     button {
@@ -53,26 +51,23 @@
       cursor: pointer;
     }
 
-    button:disabled {
-      opacity: .6;
-      cursor: not-allowed;
-    }
+    button:disabled { opacity: .6; }
 
-    #message,
-    #ordersMessage,
-    #deliveryMessage {
+    #message, #ordersMessage, #deliveryMessage {
       white-space: pre-wrap;
+      overflow-wrap: anywhere;
     }
 
     .order-card, .delivery-card {
       border: 1px solid #e2cdbb;
-      padding: 15px;
-      margin: 15px 0;
+      padding: 14px;
+      margin: 14px 0;
       border-radius: 10px;
       overflow-wrap: anywhere;
     }
 
     .muted { color: #6d594b; }
+    .status-line { font-weight: bold; }
   </style>
 </head>
 
@@ -84,25 +79,13 @@
     <p>यहाँ केवल Admin लॉगिन करें।</p>
 
     <form id="loginForm">
-      <input
-        id="email"
-        type="email"
-        placeholder="Admin email"
-        autocomplete="username"
-        required
-      >
+      <input id="email" type="email"
+        placeholder="Admin email" autocomplete="username" required>
 
-      <input
-        id="password"
-        type="password"
-        placeholder="Password"
-        autocomplete="current-password"
-        required
-      >
+      <input id="password" type="password"
+        placeholder="Password" autocomplete="current-password" required>
 
-      <button id="loginButton" type="submit">
-        Login
-      </button>
+      <button id="loginButton" type="submit">Login</button>
     </form>
 
     <p id="message" role="status"></p>
@@ -110,41 +93,28 @@
 
   <main id="adminDashboard" style="display:none">
 
-    <section id="ordersDashboard" class="dashboard">
+    <section class="dashboard">
       <h2>📦 Customer Orders</h2>
-      <p>यहाँ ग्राहकों के ऑर्डर दिखाई देंगे।</p>
-
-      <button id="refreshOrders" type="button">
-        🔄 Orders Refresh करें
-      </button>
-
-      <p id="ordersMessage" role="status">
-        Orders लोड होने की प्रतीक्षा है...
-      </p>
-
+      <button id="refreshOrders" type="button">🔄 Orders Refresh करें</button>
+      <p id="ordersMessage" role="status">Orders लोड हो रहे हैं...</p>
       <div id="ordersList"></div>
     </section>
 
-    <section id="deliveryDashboard" class="dashboard">
+    <section class="dashboard">
       <h2>🛵 Delivery Boy Approval</h2>
-
       <button id="refreshDeliveryBoys" type="button">
         Delivery Boys Refresh करें
       </button>
-
       <p id="deliveryMessage" role="status"></p>
       <div id="deliveryList"></div>
     </section>
 
     <section class="dashboard">
-      <button id="logoutButton" type="button">
-        Logout
-      </button>
+      <button id="logoutButton" type="button">Logout</button>
     </section>
 
   </main>
 
-  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
@@ -166,28 +136,22 @@
 
     const auth = firebase.auth();
     const db = firebase.database();
-
     const ADMIN_UID = "i8dtxW327zN1onqskZ7MfK3QDcc2";
 
-    const loginForm = document.getElementById("loginForm");
-    const loginButton = document.getElementById("loginButton");
-    const message = document.getElementById("message");
+    const $ = id => document.getElementById(id);
 
-    const adminDashboard =
-      document.getElementById("adminDashboard");
-
-    const ordersList = document.getElementById("ordersList");
-    const ordersMessage =
-      document.getElementById("ordersMessage");
-
-    const deliveryList =
-      document.getElementById("deliveryList");
-
-    const deliveryMessage =
-      document.getElementById("deliveryMessage");
+    const loginForm = $("loginForm");
+    const loginButton = $("loginButton");
+    const message = $("message");
+    const adminDashboard = $("adminDashboard");
+    const ordersList = $("ordersList");
+    const ordersMessage = $("ordersMessage");
+    const deliveryList = $("deliveryList");
+    const deliveryMessage = $("deliveryMessage");
 
     let approvedDeliveryBoys = [];
     let authWorkInProgress = false;
+    let loadingOrders = false;
 
     function showAdminDashboard() {
       loginForm.style.display = "none";
@@ -200,53 +164,60 @@
       adminDashboard.style.display = "none";
     }
 
+    function addText(parent, tag, text, className) {
+      const el = document.createElement(tag);
+      el.textContent = text;
+      if (className) el.className = className;
+      parent.appendChild(el);
+      return el;
+    }
+
+    function addButton(parent, text, handler) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = text;
+      button.addEventListener("click", handler);
+      parent.appendChild(button);
+      return button;
+    }
+
     // ADMIN LOGIN
-    loginForm.addEventListener("submit", async function(event) {
+    loginForm.addEventListener("submit", async event => {
       event.preventDefault();
-
-      const email =
-        document.getElementById("email").value.trim();
-
-      const password =
-        document.getElementById("password").value;
 
       loginButton.disabled = true;
       message.textContent = "Login ho raha hai...";
-
       authWorkInProgress = true;
 
       try {
-        const result =
-          await auth.signInWithEmailAndPassword(email, password);
+        const result = await auth.signInWithEmailAndPassword(
+          $("email").value.trim(),
+          $("password").value
+        );
 
         if (result.user.uid !== ADMIN_UID) {
           await auth.signOut();
-
           message.textContent =
             "Access denied: yeh Admin account nahi hai.";
-
           return;
         }
 
         showAdminDashboard();
-
         await loadDeliveryBoys();
         await loadOrders();
 
       } catch (error) {
         console.error("Login error:", error);
-
         message.textContent =
           "Login nahi hua. Email, password aur Firebase settings check karein.";
-
       } finally {
         authWorkInProgress = false;
         loginButton.disabled = false;
       }
     });
 
-    // LOGIN SESSION CHECK
-    auth.onAuthStateChanged(async function(user) {
+    // LOGIN SESSION
+    auth.onAuthStateChanged(async user => {
       if (authWorkInProgress) return;
 
       if (!user) {
@@ -257,376 +228,306 @@
       if (user.uid !== ADMIN_UID) {
         await auth.signOut();
         showLogin();
-
-        message.textContent =
-          "Access denied: yeh Admin account nahi hai.";
-
+        message.textContent = "Access denied: yeh Admin account nahi hai.";
         return;
       }
 
       showAdminDashboard();
-
       await loadDeliveryBoys();
       await loadOrders();
     });
 
     // LOGOUT
-    document.getElementById("logoutButton")
-      .addEventListener("click", async function() {
-        try {
-          await auth.signOut();
-          showLogin();
-          message.textContent = "Logout ho gaya.";
+    $("logoutButton").addEventListener("click", async () => {
+      try {
+        await auth.signOut();
+        showLogin();
+        message.textContent = "Logout ho gaya.";
+      } catch (error) {
+        console.error(error);
+        message.textContent = "Logout nahi hua.";
+      }
+    });
 
-        } catch (error) {
-          console.error(error);
-          message.textContent = "Logout nahi hua.";
-        }
-      });
+    $("refreshOrders").addEventListener("click", loadOrders);
+    $("refreshDeliveryBoys").addEventListener("click", async () => {
+      await loadDeliveryBoys();
+      await loadOrders();
+    });
 
-    // REFRESH BUTTONS
-    document.getElementById("refreshOrders")
-      .addEventListener("click", loadOrders);
-
-    document.getElementById("refreshDeliveryBoys")
-      .addEventListener("click", loadDeliveryBoys);
-
-
-    // =================================
-    // LOAD CUSTOMER ORDERS
-    // =================================
-
+    // CUSTOMER ORDERS LOAD
     async function loadOrders() {
+      if (loadingOrders) return;
+      loadingOrders = true;
+
       ordersMessage.textContent = "Orders load ho rahe hain...";
       ordersList.replaceChildren();
 
       try {
-        const snapshot =
-          await db.ref("orders").once("value");
+        const snapshot = await db.ref("orders").once("value");
 
         if (!snapshot.exists()) {
-          ordersMessage.textContent =
-            "Abhi koi order nahi mila.";
+          ordersMessage.textContent = "Abhi koi order nahi mila.";
+          return;
+        }
+
+        // Pehle orders ki list banayein, phir async kaam karein.
+        const entries = [];
+
+        snapshot.forEach(customerSnapshot => {
+          customerSnapshot.forEach(orderSnapshot => {
+            entries.push({
+              customerUid: customerSnapshot.key,
+              orderKey: orderSnapshot.key,
+              order: orderSnapshot.val() || {}
+            });
+          });
+        });
+
+        if (!entries.length) {
+          ordersMessage.textContent = "Abhi koi order nahi mila.";
           return;
         }
 
         let count = 0;
 
-        snapshot.forEach(customerSnapshot => {
-          customerSnapshot.forEach(orderSnapshot => {
-
-            const order = orderSnapshot.val() || {};
-
-            const deliveryStatus = "Loading...";
-            const deliveryUid = order.assignedDeliveryUid;
-
-let deliveryStatusText = "Abhi assign nahi hua";
-
-if (deliveryUid) {
-  try {
-    const statusSnap = await db.ref(
-      "assignedOrders/" + deliveryUid + "/" + orderKey + "/status"
-    ).once("value");
-
-    deliveryStatusText = statusSnap.val() || "Status nahi mila";
-  } catch (error) {
-    deliveryStatusText = "Status load nahi hua";
-  }
-}
-            const customerStatus = order.status || "New";
-            const orderKey = orderSnapshot.key;
-            const customerUid = customerSnapshot.key;
-
-            count++;
-
-            const card = document.createElement("div");
-            card.className = "order-card";
-
-            // ORDER TITLE
-            const title = document.createElement("h3");
-
-            title.textContent =
-              "Order: " + (order.id || orderKey);
-
-            card.appendChild(title);
-
-            // CUSTOMER DETAILS
-            const details = document.createElement("p");
-
-            details.textContent =
-              "Naam: " + (order.name || "-") +
-              " | Mobile: " + (order.phone || "-") +
-              " | Total: ₹" + (order.total ?? 0);
-
-            card.appendChild(details);
-
-            // ADDRESS
-            const address = document.createElement("p");
-
-            address.textContent =
-              "Address: " + (order.address || "-");
-
-            card.appendChild(address);
-
-            // ITEMS
-            const products = document.createElement("p");
-
-            products.textContent =
-              "Items: " +
-              (
-                Array.isArray(order.items)
-                  ? order.items.map(item =>
-                      (item.name || "Item") +
-                      " × " + (item.quantity ?? 1)
-                    ).join(", ")
-                  : "Order items"
-              );
-
-            card.appendChild(products);
-
-            // STATUS SELECT
-            const statusLabel =
-              document.createElement("label");
-
-            statusLabel.textContent = "Order status:";
-
-            const select = document.createElement("select");
-
-            const statuses = [
-              "New",
-              "Accepted",
-              "Preparing",
-              "Assigned",
-              "Out for Delivery",
-              "Delivered",
-              "Cancelled"
-            ];
-
-            statuses.forEach(status => {
-              const option = document.createElement("option");
-
-              option.value = status;
-              option.textContent = status;
-
-              select.appendChild(option);
-            });
-
-            select.value = statuses.includes(order.status)
-              ? order.status
-              : "New";
-
-            statusLabel.appendChild(select);
-            card.appendChild(statusLabel);
-
-            const currentStatus =
-              document.createElement("p");
-
-            currentStatus.className = "muted";
-
-            currentStatus.textContent =
-              "Abhi ka status: " + (order.status || "New");
-
-            card.appendChild(currentStatus);
-
-            select.addEventListener("change", function() {
-              currentStatus.textContent =
-                "Naya status: " + select.value;
-            });
-
-
-            // DELIVERY BOY DROPDOWN
-            const deliveryLabel =
-              document.createElement("label");
-
-            deliveryLabel.textContent =
-              "Delivery Boy चुनें:";
-
-            const deliverySelect =
-              document.createElement("select");
-
-            const defaultOption =
-              document.createElement("option");
-
-            defaultOption.value = "";
-            defaultOption.textContent =
-              "Delivery Boy चुनें";
-
-            deliverySelect.appendChild(defaultOption);
-
-            approvedDeliveryBoys.forEach(boy => {
-              const option = document.createElement("option");
-
-              option.value = boy.uid;
-
-              option.textContent =
-                boy.name +
-                (boy.phone ? " (" + boy.phone + ")" : "");
-
-              deliverySelect.appendChild(option);
-            });
-
-            deliveryLabel.appendChild(deliverySelect);
-            card.appendChild(deliveryLabel);
-
-
-            // ASSIGN ORDER BUTTON
-            const assignButton =
-              document.createElement("button");
-
-            assignButton.type = "button";
-            assignButton.textContent = "Assign Order";
-
-            card.appendChild(assignButton);
-
-            assignButton.addEventListener("click", async function() {
-              const deliveryUid = deliverySelect.value;
-
-              if (!deliveryUid) {
-                ordersMessage.textContent =
-                  "Pehle Delivery Boy chunein.";
-                return;
-              }
-
-              const selectedBoy =
-                approvedDeliveryBoys.find(
-                  boy => boy.uid === deliveryUid
-                );
-
-              if (!selectedBoy) {
-                ordersMessage.textContent =
-                  "Approved Delivery Boy nahi mila. List refresh karein.";
-                return;
-              }
-
-              assignButton.disabled = true;
-              assignButton.textContent = "Assign ho raha hai...";
-
-              try {
-                const assignedOrder = {
-                  orderId: orderKey,
-                  customerUid: customerUid,
-                  name: order.name || "",
-                  phone: order.phone || "",
-                  address: order.address || "",
-                  items: order.items || [],
-                  total: order.total ?? 0,
-                  shop: order.shop || "",
-                  status: "Assigned",
-                  assignedAt: Date.now()
-                };
-
-                // DELIVERY BOY KE ACCOUNT MEIN SAVE
-                await db.ref(
-                  "assignedOrders/" +
-                  deliveryUid + "/" + orderKey
-                ).set(assignedOrder);
-
-                // ORIGINAL ORDER UPDATE
-                await db.ref(
-                  "orders/" +
-                  customerUid + "/" + orderKey
-                ).update({
-                  assignedDeliveryUid: deliveryUid,
-                  assignedDeliveryName: selectedBoy.name,
-                  status: "Assigned"
-                });
-
-                order.status = "Assigned";
-
-                currentStatus.textContent =
-                  "Abhi ka status: Assigned";
-
-                ordersMessage.textContent =
-                  "Order " +
-                  (order.id || orderKey) +
-                  " " + selectedBoy.name +
-                  " ko assign ho gaya.";
-
-                assignButton.textContent = "Assigned ✓";
-
-              } catch (error) {
-                console.error("Assign error:", error);
-
-                ordersMessage.textContent =
-                  "Assign nahi hua. Firebase Rules ya internet check karein.";
-
-                assignButton.disabled = false;
-                assignButton.textContent = "Dobara Try Karein";
-              }
-            });
-
-
-            // SAVE STATUS BUTTON
-            const saveButton =
-              document.createElement("button");
-
-            saveButton.type = "button";
-            saveButton.textContent = "Status Save Karein";
-
-            card.appendChild(saveButton);
-
-            saveButton.addEventListener("click", async function() {
-              saveButton.disabled = true;
-
-              try {
-                await db.ref(
-                  "orders/" +
-                  customerUid + "/" +
-                  orderKey + "/status"
-                ).set(select.value);
-
-                order.status = select.value;
-
-                currentStatus.textContent =
-                  "Abhi ka status: " + select.value;
-
-                ordersMessage.textContent =
-                  "Order " +
-                  (order.id || orderKey) +
-                  " ka status save ho gaya.";
-
-              } catch (error) {
-                console.error("Status save error:", error);
-
-                ordersMessage.textContent =
-                  "Status save nahi hua. Firebase Rules check karein.";
-
-              } finally {
-                saveButton.disabled = false;
-              }
-            });
-
-            ordersList.appendChild(card);
+        for (const entry of entries) {
+          const { customerUid, orderKey } = entry;
+          const order = entry.order;
+
+          let deliveryStatusText = "Abhi assign nahi hua";
+
+          if (order.assignedDeliveryUid) {
+            try {
+              const statusSnap = await db.ref(
+                "assignedOrders/" +
+                order.assignedDeliveryUid + "/" +
+                orderKey + "/status"
+              ).once("value");
+
+              deliveryStatusText =
+                statusSnap.val() || order.status || "Status nahi mila";
+            } catch (error) {
+              console.error("Delivery status error:", error);
+              deliveryStatusText =
+                "Status load nahi hua; Original: " + (order.status || "New");
+            }
+          }
+
+          count++;
+
+          const card = document.createElement("div");
+          card.className = "order-card";
+
+          addText(card, "h3", "Order: " + (order.id || orderKey));
+
+          addText(card, "p",
+            "Naam: " + (order.name || "-") +
+            " | Mobile: " + (order.phone || "-") +
+            " | Total: ₹" + (order.total ?? 0)
+          );
+
+          addText(card, "p", "Address: " + (order.address || "-"));
+
+          const itemsText = Array.isArray(order.items)
+            ? order.items.map(item =>
+                (item.name || "Item") + " × " + (item.quantity ?? 1)
+              ).join(", ")
+            : "Order items database format mein check karein";
+
+          addText(card, "p", "Items: " + itemsText);
+
+          addText(card, "p",
+            "Shop: " + (order.shop || "-")
+          );
+
+          addText(card, "p",
+            "Customer Order Status: " + (order.status || "New"),
+            "status-line"
+          );
+
+          addText(card, "p",
+            "Delivery Boy Status: " + deliveryStatusText,
+            "status-line"
+          );
+
+          // STATUS SELECT
+          addText(card, "label", "Order status:");
+
+          const select = document.createElement("select");
+          const statuses = [
+            "New",
+            "Accepted",
+            "Preparing",
+            "Assigned",
+            "Out for Delivery",
+            "Delivered",
+            "Cancelled"
+          ];
+
+          statuses.forEach(status => {
+            const option = document.createElement("option");
+            option.value = status;
+            option.textContent = status;
+            select.appendChild(option);
           });
-        });
 
-        ordersMessage.textContent = count
-          ? "Kul orders: " + count
-          : "Abhi koi order nahi mila.";
+          select.value = statuses.includes(order.status)
+            ? order.status
+            : "New";
+
+          card.appendChild(select);
+
+          const currentStatus = addText(
+            card, "p", "Selected status: " + select.value, "muted"
+          );
+
+          select.addEventListener("change", () => {
+            currentStatus.textContent = "Selected status: " + select.value;
+          });
+
+          // DELIVERY BOY SELECT
+          addText(card, "label", "Delivery Boy चुनें:");
+
+          const deliverySelect = document.createElement("select");
+          const defaultOption = document.createElement("option");
+          defaultOption.value = "";
+          defaultOption.textContent = "Delivery Boy चुनें";
+          deliverySelect.appendChild(defaultOption);
+
+          approvedDeliveryBoys.forEach(boy => {
+            const option = document.createElement("option");
+            option.value = boy.uid;
+            option.textContent =
+              boy.name + (boy.phone ? " (" + boy.phone + ")" : "");
+            deliverySelect.appendChild(option);
+          });
+
+          if (order.assignedDeliveryUid) {
+            deliverySelect.value = order.assignedDeliveryUid;
+          }
+
+          card.appendChild(deliverySelect);
+
+          // ASSIGN ORDER
+          const assignButton = addButton(card, "Assign Order", async () => {
+            const deliveryUid = deliverySelect.value;
+
+            if (!deliveryUid) {
+              ordersMessage.textContent = "Pehle Delivery Boy chunein.";
+              return;
+            }
+
+            const selectedBoy = approvedDeliveryBoys.find(
+              boy => boy.uid === deliveryUid
+            );
+
+            if (!selectedBoy) {
+              ordersMessage.textContent =
+                "Approved Delivery Boy nahi mila. List refresh karein.";
+              return;
+            }
+
+            assignButton.disabled = true;
+            assignButton.textContent = "Assign ho raha hai...";
+
+            try {
+              const assignedOrder = {
+                orderId: orderKey,
+                customerUid,
+                name: order.name || "",
+                phone: order.phone || "",
+                address: order.address || "",
+                items: order.items || [],
+                total: order.total ?? 0,
+                shop: order.shop || "",
+                status: "Assigned",
+                assignedAt: Date.now()
+              };
+
+              await db.ref(
+                "assignedOrders/" + deliveryUid + "/" + orderKey
+              ).set(assignedOrder);
+
+              await db.ref(
+                "orders/" + customerUid + "/" + orderKey
+              ).update({
+                assignedDeliveryUid: deliveryUid,
+                assignedDeliveryName: selectedBoy.name,
+                status: "Assigned"
+              });
+
+              ordersMessage.textContent =
+                "Order " + (order.id || orderKey) +
+                " " + selectedBoy.name + " ko assign ho gaya.";
+
+              await loadOrders();
+
+            } catch (error) {
+              console.error("Assign error:", error);
+              ordersMessage.textContent =
+                "Assign nahi hua. Firebase Rules aur internet check karein.";
+              assignButton.disabled = false;
+              assignButton.textContent = "Dobara Try Karein";
+            }
+          });
+
+          // SAVE ADMIN STATUS
+          const saveButton = addButton(card, "Status Save Karein", async () => {
+            const newStatus = select.value;
+            saveButton.disabled = true;
+            saveButton.textContent = "Save ho raha hai...";
+
+            try {
+              await db.ref(
+                "orders/" + customerUid + "/" + orderKey + "/status"
+              ).set(newStatus);
+
+              // Assigned order hai to uska status bhi update karein.
+              if (order.assignedDeliveryUid) {
+                await db.ref(
+                  "assignedOrders/" + order.assignedDeliveryUid +
+                  "/" + orderKey + "/status"
+                ).set(newStatus);
+              }
+
+              ordersMessage.textContent =
+                "Order " + (order.id || orderKey) +
+                " ka status save ho gaya.";
+
+              await loadOrders();
+
+            } catch (error) {
+              console.error("Status save error:", error);
+              ordersMessage.textContent =
+                "Status save nahi hua. Firebase Rules check karein.";
+              saveButton.disabled = false;
+              saveButton.textContent = "Dobara Try Karein";
+            }
+          });
+
+          ordersList.appendChild(card);
+        }
+
+        ordersMessage.textContent = "Kul orders: " + count;
 
       } catch (error) {
         console.error("Orders load error:", error);
-
         ordersMessage.textContent =
-          "Orders load nahi hue. Firebase Rules aur internet check karein.";
+          "Orders load nahi hue. Admin login, internet aur Firebase Rules check karein.";
+      } finally {
+        loadingOrders = false;
       }
     }
 
-
-    // =================================
-    // LOAD AND APPROVE DELIVERY BOYS
-    // =================================
-
+    // DELIVERY BOYS LOAD
     async function loadDeliveryBoys() {
-      deliveryMessage.textContent =
-        "Delivery Boys load ho rahe hain...";
-
+      deliveryMessage.textContent = "Delivery Boys load ho rahe hain...";
       deliveryList.replaceChildren();
       approvedDeliveryBoys = [];
 
       try {
-        const snapshot =
-          await db.ref("deliveryBoys").once("value");
+        const snapshot = await db.ref("deliveryBoys").once("value");
 
         if (!snapshot.exists()) {
           deliveryMessage.textContent =
@@ -639,12 +540,11 @@ if (deliveryUid) {
         snapshot.forEach(child => {
           const boy = child.val() || {};
           const uid = child.key;
-
           count++;
 
           if (boy.status === "approved") {
             approvedDeliveryBoys.push({
-              uid: uid,
+              uid,
               name: boy.name || "Delivery Boy",
               phone: boy.phone || ""
             });
@@ -653,68 +553,43 @@ if (deliveryUid) {
           const card = document.createElement("div");
           card.className = "delivery-card";
 
-          const name = document.createElement("h3");
-
-          name.textContent =
-            boy.name || "Naam nahi diya";
-
-          card.appendChild(name);
-
-          const details = document.createElement("p");
-
-          details.textContent =
+          addText(card, "h3", boy.name || "Naam nahi diya");
+          addText(card, "p",
             "Mobile: " + (boy.phone || "-") +
-            " | Email: " + (boy.email || "-");
+            " | Email: " + (boy.email || "-")
+          );
+          addText(card, "p", "Status: " + (boy.status || "pending"));
 
-          card.appendChild(details);
-
-          const status = document.createElement("p");
-
-          status.textContent =
-            "Status: " + (boy.status || "pending");
-
-          card.appendChild(status);
-
-
-          // APPROVE BUTTON
           if (boy.status === "pending") {
-            const approveButton =
-              document.createElement("button");
-
+            addButton(card, "Approve Delivery Boy", async event => {
+              // Is handler ko neeche actual button handler se replace kiya gaya hai.
+            }).remove();
+            
+            const approveButton = document.createElement("button");
             approveButton.type = "button";
-            approveButton.textContent =
-              "Approve Delivery Boy";
-
+            approveButton.textContent = "Approve Delivery Boy";
             card.appendChild(approveButton);
 
-            approveButton.addEventListener("click", async function() {
+            approveButton.addEventListener("click", async () => {
               approveButton.disabled = true;
-
-              approveButton.textContent =
-                "Approve ho raha hai...";
+              approveButton.textContent = "Approve ho raha hai...";
 
               try {
-                await db.ref(
-                  "deliveryBoys/" + uid + "/status"
-                ).set("approved");
+                await db.ref("deliveryBoys/" + uid + "/status")
+                  .set("approved");
 
                 deliveryMessage.textContent =
-                  (boy.name || "Delivery Boy") +
-                  " approve ho gaya!";
+                  (boy.name || "Delivery Boy") + " approve ho gaya!";
 
-                // APPROVAL KE BAAD DONO LIST REFRESH
                 await loadDeliveryBoys();
                 await loadOrders();
 
               } catch (error) {
                 console.error("Approval error:", error);
-
                 deliveryMessage.textContent =
                   "Approve nahi hua. Firebase Rules check karein.";
-
                 approveButton.disabled = false;
-                approveButton.textContent =
-                  "Dobara Try Karein";
+                approveButton.textContent = "Dobara Try Karein";
               }
             });
           }
@@ -728,12 +603,10 @@ if (deliveryUid) {
 
       } catch (error) {
         console.error("Delivery Boys load error:", error);
-
         deliveryMessage.textContent =
           "List load nahi hui. Admin login aur Firebase Rules check karein.";
       }
     }
   </script>
-
 </body>
 </html>
