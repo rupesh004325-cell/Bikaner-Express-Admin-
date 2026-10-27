@@ -316,6 +316,7 @@
           customerSnapshot.forEach(orderSnapshot => {
 
             const order = orderSnapshot.val() || {};
+            const customerStatus = order.status || "New";
             const orderKey = orderSnapshot.key;
             const customerUid = customerSnapshot.key;
 
