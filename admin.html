@@ -316,6 +316,23 @@
           customerSnapshot.forEach(orderSnapshot => {
 
             const order = orderSnapshot.val() || {};
+
+            const deliveryStatus = "Loading...";
+            const deliveryUid = order.assignedDeliveryUid;
+
+let deliveryStatusText = "Abhi assign nahi hua";
+
+if (deliveryUid) {
+  try {
+    const statusSnap = await db.ref(
+      "assignedOrders/" + deliveryUid + "/" + orderKey + "/status"
+    ).once("value");
+
+    deliveryStatusText = statusSnap.val() || "Status nahi mila";
+  } catch (error) {
+    deliveryStatusText = "Status load nahi hua";
+  }
+}
             const customerStatus = order.status || "New";
             const orderKey = orderSnapshot.key;
             const customerUid = customerSnapshot.key;
