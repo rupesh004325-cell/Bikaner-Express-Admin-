@@ -2,611 +2,534 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bikaner Express Admin</title>
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #fff8ed;
-      margin: 0;
-      padding: 12px;
-      color: #382417;
-    }
-
-    .card, .dashboard {
-      max-width: 900px;
-      margin: 18px auto;
-      padding: 20px;
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 4px 16px #0001;
-      box-sizing: border-box;
-    }
-
-    .card { max-width: 500px; }
-    h1 { color: #a94313; }
-
-    input, button, select {
-      box-sizing: border-box;
-      width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      border-radius: 8px;
-      font-size: 16px;
-    }
-
-    input, select {
-      border: 1px solid #d8c8b8;
-      background: white;
-      color: #382417;
-    }
-
-    button {
-      background: #a94313;
-      color: white;
-      border: 0;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    button:disabled { opacity: .6; }
-
-    #message, #ordersMessage, #deliveryMessage {
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
-    }
-
-    .order-card, .delivery-card {
-      border: 1px solid #e2cdbb;
-      padding: 14px;
-      margin: 14px 0;
-      border-radius: 10px;
-      overflow-wrap: anywhere;
-    }
-
-    .muted { color: #6d594b; }
-    .status-line { font-weight: bold; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bikaner Express - Main Admin</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#fff8ee;color:#292321}
+header{background:#8b1e1e;color:white;padding:16px;text-align:center}
+header h2{margin:0 0 6px}
+.container{max-width:950px;margin:auto;padding:15px}
+.panel{background:white;padding:15px;margin:12px 0;border-radius:12px;box-shadow:0 2px 8px #0001}
+input,select,button{width:100%;padding:11px;margin:6px 0;border:1px solid #ccc;border-radius:7px;font-size:15px}
+button{background:#a82420;color:white;border:0;cursor:pointer;font-weight:bold}
+button:disabled{opacity:.6}
+.secondary{background:#555}
+.green{background:#187a38}
+.nav{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.nav button{margin:0}
+.page{display:none}
+.page.active{display:block}
+.item{border:1px solid #ddd;border-radius:9px;padding:12px;margin:10px 0;overflow-wrap:anywhere}
+.item h3{margin:0 0 8px;color:#8b1e1e}
+.small{font-size:13px;color:#666}
+.status{font-weight:bold;color:#187a38}
+.message{font-size:14px;margin:8px 0}
+.hidden{display:none!important}
+@media(max-width:480px){.nav{grid-template-columns:1fr 1fr}}
+</style>
 </head>
-
 <body>
 
-  <div class="card">
-    <h1>🛵 Bikaner Express</h1>
-    <h2>Admin Login</h2>
-    <p>यहाँ केवल Admin लॉगिन करें।</p>
+<header>
+<h2>🥮 Bikaner Express</h2>
+<div>Main Admin Dashboard</div>
+</header>
 
-    <form id="loginForm">
-      <input id="email" type="email"
-        placeholder="Admin email" autocomplete="username" required>
+<div class="container">
+<div id="loginPanel" class="panel">
+<h3>Admin Login</h3>
+<form id="loginForm">
+<input id="adminEmail" type="email" placeholder="Admin Email" required>
+<input id="adminPassword" type="password" placeholder="Password" required>
+<button id="loginButton" type="submit">Login</button>
+</form>
+<div id="loginMessage" class="message"></div>
+</div>
 
-      <input id="password" type="password"
-        placeholder="Password" autocomplete="current-password" required>
+<div id="dashboard" class="hidden">
+<div class="panel">
+<b>Welcome, Main Admin</b>
+<button id="logoutButton" class="secondary">Logout</button>
+</div>
 
-      <button id="loginButton" type="submit">Login</button>
-    </form>
+<div class="nav">
+<button onclick="showPage('ordersPage')">📦 Orders</button>
+<button onclick="showPage('approvedPage')">✅ Approved Orders</button>
+<button onclick="showPage('deliveryPage')">🛵 Delivery Boys</button>
+<button onclick="openShopManagement()">🏪 Shop Management</button>
+</div>
 
-    <p id="message" role="status"></p>
-  </div>
+<section id="ordersPage" class="page active">
+<div class="panel">
+<h3>📦 Customer Orders</h3>
+<p class="small">सभी ग्राहकों के ऑर्डर यहाँ दिखाई देंगे।</p>
+<button id="refreshOrders">Refresh Orders</button>
+<div id="ordersMessage" class="message"></div>
+<div id="ordersList">Loading...</div>
+</div>
+</section>
 
-  <main id="adminDashboard" style="display:none">
+<section id="approvedPage" class="page">
+<div class="panel">
+<h3>✅ Approved Orders</h3>
+<button id="refreshApproved">Refresh Approved Orders</button>
+<div id="approvedMessage" class="message"></div>
+<div id="approvedList">Loading...</div>
+</div>
+</section>
 
-    <section class="dashboard">
-      <h2>📦 Customer Orders</h2>
-      <button id="refreshOrders" type="button">🔄 Orders Refresh करें</button>
-      <p id="ordersMessage" role="status">Orders लोड हो रहे हैं...</p>
-      <div id="ordersList"></div>
-    </section>
+<section id="deliveryPage" class="page">
+<div class="panel">
+<h3>🛵 Delivery Boy Management</h3>
+<button id="refreshDeliveryBoys">Refresh Delivery Boys</button>
+<div id="deliveryMessage" class="message"></div>
+<div id="deliveryList">Loading...</div>
+</div>
+</section>
+</div>
+</div>
 
-    <section class="dashboard">
-      <h2>🛵 Delivery Boy Approval</h2>
-      <button id="refreshDeliveryBoys" type="button">
-        Delivery Boys Refresh करें
-      </button>
-      <p id="deliveryMessage" role="status"></p>
-      <div id="deliveryList"></div>
-    </section>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 
-    <section class="dashboard">
-      <button id="logoutButton" type="button">Logout</button>
-    </section>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDhumnH7lRnz_LVJLTMklksusBPaDAkCh4",
+  authDomain: "bikaner-express-537a2.firebaseapp.com",
+  databaseURL: "https://bikaner-express-537a2-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "bikaner-express-537a2",
+  storageBucket: "bikaner-express-537a2.firebasestorage.app",
+  messagingSenderId: "852964791053",
+  appId: "1:852964791053:web:94c129e58b72a375661644"
+};
 
-  </main>
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+const auth = firebase.auth();
+const db = firebase.database();
+const ADMIN_UID = "i8dtxW327zN1onqskZ7MfK3QDcc2";
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDhumnH7lRnz_LVJLTMklksusBPaDAkCh4",
-      authDomain: "bikaner-express-537a2.firebaseapp.com",
-      databaseURL: "https://bikaner-express-537a2-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "bikaner-express-537a2",
-      storageBucket: "bikaner-express-537a2.firebasestorage.app",
-      messagingSenderId: "852964791053",
-      appId: "1:852964791053:web:94c129e58b72a375661644"
+let approvedBoys = [];
+let allOrders = [];
+let authWorkInProgress = false;
+
+function safe(value){
+  return String(value ?? "").replace(/[&<>"']/g, ch => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  })[ch]);
+}
+
+function showMessage(id,text){
+  document.getElementById(id).textContent = text;
+}
+
+function showPage(pageId){
+  document.querySelectorAll(".page").forEach(page=>page.classList.remove("active"));
+  document.getElementById(pageId).classList.add("active");
+
+  if(pageId === "ordersPage") loadOrders();
+  if(pageId === "approvedPage") loadApprovedOrders();
+  if(pageId === "deliveryPage") loadDeliveryBoys();
+}
+
+function openShopManagement(){
+  window.location.href = "Admin_shop_management.html";
+}
+
+function getStatus(order){
+  return String(order.status || "New");
+}
+
+function getItemsText(items){
+  if(!items) return "जानकारी उपलब्ध नहीं";
+  if(typeof items === "string") return items;
+
+  if(Array.isArray(items)){
+    return items.map(item=>{
+      if(typeof item === "string") return item;
+      return `${item.name || item.productName || "Item"} x ${item.quantity || item.qty || 1}`;
+    }).join(", ");
+  }
+
+  if(typeof items === "object"){
+    return Object.entries(items).map(([name,item])=>{
+      if(typeof item === "number") return `${name} x ${item}`;
+      return `${name} x ${(item && (item.quantity || item.qty)) || 1}`;
+    }).join(", ");
+  }
+  return "जानकारी उपलब्ध नहीं";
+}
+
+/* LOGIN */
+document.getElementById("loginForm").addEventListener("submit",async function(e){
+  e.preventDefault();
+  const email = document.getElementById("adminEmail").value.trim();
+  const password = document.getElementById("adminPassword").value;
+  const button = document.getElementById("loginButton");
+
+  button.disabled = true;
+  showMessage("loginMessage","Login हो रहा है...");
+  authWorkInProgress = true;
+
+  try{
+    const result = await auth.signInWithEmailAndPassword(email,password);
+    if(result.user.uid !== ADMIN_UID){
+      await auth.signOut();
+      showMessage("loginMessage","यह Main Admin अकाउंट नहीं है।");
+      return;
+    }
+    document.getElementById("loginPanel").classList.add("hidden");
+    document.getElementById("dashboard").classList.remove("hidden");
+    await loadOrders();
+    await loadDeliveryBoys();
+  }catch(error){
+    showMessage("loginMessage","Login Error: " + error.message);
+  }finally{
+    authWorkInProgress = false;
+    button.disabled = false;
+  }
+});
+
+/* AUTH CHECK */
+auth.onAuthStateChanged(user=>{
+  if(authWorkInProgress) return;
+
+  if(user && user.uid === ADMIN_UID){
+    document.getElementById("loginPanel").classList.add("hidden");
+    document.getElementById("dashboard").classList.remove("hidden");
+    loadOrders();
+    loadDeliveryBoys();
+  }else{
+    document.getElementById("loginPanel").classList.remove("hidden");
+    document.getElementById("dashboard").classList.add("hidden");
+  }
+});
+
+/* LOGOUT */
+document.getElementById("logoutButton").addEventListener("click",async()=>{
+  await auth.signOut();
+});
+
+/* FETCH ORDERS */
+async function fetchAllOrders(){
+  const snapshot = await db.ref("orders").once("value");
+  const data = snapshot.val() || {};
+  const result = [];
+
+  Object.entries(data).forEach(([customerUid,customerOrders])=>{
+    if(!customerOrders || typeof customerOrders !== "object") return;
+    Object.entries(customerOrders).forEach(([orderKey,order])=>{
+      if(!order || typeof order !== "object") return;
+      result.push({...order,customerUid,orderKey});
+    });
+  });
+
+  allOrders = result;
+  return result;
+}
+
+/* ORDER CARD */
+function orderCard(order){
+  const status = getStatus(order);
+  const assignedUid = order.assignedDeliveryUid || order.deliveryBoyUid || "";
+
+  const options = [
+    "New","Accepted","Approved","Preparing","Assigned",
+    "Picked Up","Out for Delivery","Delivered","Cancelled"
+  ];
+
+  return `
+  <div class="item">
+    <h3>Order: ${safe(order.orderKey)}</h3>
+    <p><b>Customer:</b> ${safe(order.name || "N/A")}</p>
+    <p><b>Mobile:</b> ${safe(order.phone || "N/A")}</p>
+    <p><b>Address:</b> ${safe(order.address || "N/A")}</p>
+    <p><b>Items:</b> ${safe(getItemsText(order.items))}</p>
+    <p><b>Total:</b> ₹${safe(order.total || 0)}</p>
+    <p><b>Shop:</b> ${safe(order.shop || order.shopName || "N/A")}</p>
+    <p><b>Shop Address:</b> ${safe(order.shopAddress || "Assign करने पर लोड होगा")}</p>
+    <p><b>Current Status:</b> <span class="status">${safe(status)}</span></p>
+
+    <label>Order Status</label>
+    <select id="status_${safe(order.orderKey)}">
+      ${options.map(option=>`
+        <option value="${safe(option)}" ${status.toLowerCase() === option.toLowerCase() ? "selected" : ""}>
+          ${safe(option)}
+        </option>
+      `).join("")}
+    </select>
+
+    <label>Assign Delivery Boy</label>
+    <select id="boy_${safe(order.orderKey)}">
+      <option value="">Delivery Boy चुनें</option>
+      ${approvedBoys.map(boy=>`
+        <option value="${safe(boy.uid)}" ${assignedUid === boy.uid ? "selected" : ""}>
+          ${safe(boy.name)} - ${safe(boy.phone)}
+        </option>
+      `).join("")}
+    </select>
+
+    <button onclick="saveOrder('${safe(order.customerUid)}','${safe(order.orderKey)}')">
+      Save Order
+    </button>
+  </div>`;
+}
+
+/* LOAD ORDERS */
+async function loadOrders(){
+  const list = document.getElementById("ordersList");
+  list.textContent = "Loading orders...";
+
+  try{
+    const orders = await fetchAllOrders();
+    if(!orders.length){
+      list.textContent = "अभी कोई ऑर्डर नहीं है।";
+      showMessage("ordersMessage","0 Orders");
+      return;
+    }
+    list.innerHTML = orders.map(orderCard).join("");
+    showMessage("ordersMessage",orders.length + " Orders मिले।");
+  }catch(error){
+    list.textContent = "Orders लोड नहीं हुए: " + error.message;
+  }
+}
+
+/* LOAD APPROVED ORDERS */
+async function loadApprovedOrders(){
+  const list = document.getElementById("approvedList");
+  list.textContent = "Loading approved orders...";
+
+  try{
+    const orders = await fetchAllOrders();
+    const approved = orders.filter(order=>getStatus(order).toLowerCase() === "approved");
+
+    if(!approved.length){
+      list.textContent = "अभी कोई Approved Order नहीं है।";
+      showMessage("approvedMessage","0 Approved Orders");
+      return;
+    }
+    list.innerHTML = approved.map(orderCard).join("");
+    showMessage("approvedMessage",approved.length + " Approved Orders मिले।");
+  }catch(error){
+    list.textContent = "Approved Orders लोड नहीं हुए: " + error.message;
+  }
+}
+
+
+  
+
+
+/* SAVE ORDER, SEND TO SHOP AND ASSIGN DELIVERY BOY */
+async function saveOrder(customerUid, orderKey) {
+  if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID) {
+    alert("Admin Login जरूरी है।");
+    return;
+  }
+
+  const statusElement = document.getElementById("status_" + orderKey);
+  const boyElement = document.getElementById("boy_" + orderKey);
+
+  if (!statusElement || !boyElement) return;
+
+  const newStatus = statusElement.value;
+  const boyUid = boyElement.value;
+
+  try {
+    const order = allOrders.find(o =>
+      o.customerUid === customerUid && o.orderKey === orderKey
+    );
+
+    if (!order) {
+      alert("Order नहीं मिला। Refresh करके कोशिश करें।");
+      return;
+    }
+
+    // Firebase से दुकानों की जानकारी
+    const shopsSnapshot = await db.ref("shops").once("value");
+    const shopsData = shopsSnapshot.val() || {};
+
+    let orderShopName = String(
+      order.shop || order.shopName || ""
+    ).trim().toLowerCase();
+
+    // Demo Shop B की असली दुकान से Mapping
+    if (
+  orderShopName === "bikaner express shop a (demo)" ||
+  orderShopName === "bikaner express shop b (demo)"
+) {
+  orderShopName = "bikaner sweet noida wale";
+}
+
+    // दुकान खोजें
+    const shopEntry = Object.entries(shopsData).find(([uid, shop]) =>
+      String(shop.shopName || "").trim().toLowerCase() === orderShopName &&
+      shop.approvalStatus === "approved" &&
+      shop.accountStatus === "active"
+    );
+
+    if (!shopEntry) {
+      alert("Approved दुकान नहीं मिली। Shop का नाम Firebase में जाँचें।");
+      return;
+    }
+
+    const [shopUid, shopData] = shopEntry;
+    const shopAddress = shopData.address || "";
+
+    if (!shopAddress) {
+      alert("दुकान का पता Firebase में खाली है।");
+      return;
+    }
+
+    const updates = {};
+
+    // Main Order अपडेट
+    updates[`orders/${customerUid}/${orderKey}/status`] = newStatus;
+    updates[`orders/${customerUid}/${orderKey}/shopUid`] = shopUid;
+    updates[`orders/${customerUid}/${orderKey}/shopAddress`] = shopAddress;
+
+    // Shop Dashboard के लिए सुरक्षित Order जानकारी
+    const shopOrder = {
+      orderId: orderKey,
+      items: order.items || {},
+      total: order.total || 0,
+      status: newStatus,
+      shopName: shopData.shopName || "",
+      createdAt: order.createdAt || "",
+      deliveryStatus: order.deliveryStatus || ""
     };
 
-    if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
-    }
+    updates[`shopOrders/${shopUid}/${orderKey}`] = shopOrder;
 
-    const auth = firebase.auth();
-    const db = firebase.database();
-    const ADMIN_UID = "i8dtxW327zN1onqskZ7MfK3QDcc2";
+    // Delivery Boy Assign किया गया है तो उसकी जानकारी भी सेव करें
+    if (boyUid) {
+      const boy = approvedBoys.find(item => item.uid === boyUid);
 
-    const $ = id => document.getElementById(id);
-
-    const loginForm = $("loginForm");
-    const loginButton = $("loginButton");
-    const message = $("message");
-    const adminDashboard = $("adminDashboard");
-    const ordersList = $("ordersList");
-    const ordersMessage = $("ordersMessage");
-    const deliveryList = $("deliveryList");
-    const deliveryMessage = $("deliveryMessage");
-
-    let approvedDeliveryBoys = [];
-    let authWorkInProgress = false;
-    let loadingOrders = false;
-
-    function showAdminDashboard() {
-      loginForm.style.display = "none";
-      adminDashboard.style.display = "block";
-      message.textContent = "Admin login successful!";
-    }
-
-    function showLogin() {
-      loginForm.style.display = "block";
-      adminDashboard.style.display = "none";
-    }
-
-    function addText(parent, tag, text, className) {
-      const el = document.createElement(tag);
-      el.textContent = text;
-      if (className) el.className = className;
-      parent.appendChild(el);
-      return el;
-    }
-
-    function addButton(parent, text, handler) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.textContent = text;
-      button.addEventListener("click", handler);
-      parent.appendChild(button);
-      return button;
-    }
-
-    // ADMIN LOGIN
-    loginForm.addEventListener("submit", async event => {
-      event.preventDefault();
-
-      loginButton.disabled = true;
-      message.textContent = "Login ho raha hai...";
-      authWorkInProgress = true;
-
-      try {
-        const result = await auth.signInWithEmailAndPassword(
-          $("email").value.trim(),
-          $("password").value
-        );
-
-        if (result.user.uid !== ADMIN_UID) {
-          await auth.signOut();
-          message.textContent =
-            "Access denied: yeh Admin account nahi hai.";
-          return;
-        }
-
-        showAdminDashboard();
-        await loadDeliveryBoys();
-        await loadOrders();
-
-      } catch (error) {
-        console.error("Login error:", error);
-        message.textContent =
-          "Login nahi hua. Email, password aur Firebase settings check karein.";
-      } finally {
-        authWorkInProgress = false;
-        loginButton.disabled = false;
-      }
-    });
-
-    // LOGIN SESSION
-    auth.onAuthStateChanged(async user => {
-      if (authWorkInProgress) return;
-
-      if (!user) {
-        showLogin();
+      if (!boy) {
+        alert("Approved Delivery Boy नहीं मिला।");
         return;
       }
 
-      if (user.uid !== ADMIN_UID) {
-        await auth.signOut();
-        showLogin();
-        message.textContent = "Access denied: yeh Admin account nahi hai.";
-        return;
-      }
+      updates[`orders/${customerUid}/${orderKey}/deliveryBoyUid`] = boyUid;
+      updates[`orders/${customerUid}/${orderKey}/assignedDeliveryUid`] = boyUid;
+      updates[`orders/${customerUid}/${orderKey}/deliveryBoyName`] = boy.name || "";
 
-      showAdminDashboard();
-      await loadDeliveryBoys();
-      await loadOrders();
-    });
-
-    // LOGOUT
-    $("logoutButton").addEventListener("click", async () => {
-      try {
-        await auth.signOut();
-        showLogin();
-        message.textContent = "Logout ho gaya.";
-      } catch (error) {
-        console.error(error);
-        message.textContent = "Logout nahi hua.";
-      }
-    });
-
-    $("refreshOrders").addEventListener("click", loadOrders);
-    $("refreshDeliveryBoys").addEventListener("click", async () => {
-      await loadDeliveryBoys();
-      await loadOrders();
-    });
-
-    // CUSTOMER ORDERS LOAD
-    async function loadOrders() {
-      if (loadingOrders) return;
-      loadingOrders = true;
-
-      ordersMessage.textContent = "Orders load ho rahe hain...";
-      ordersList.replaceChildren();
-
-      try {
-        const snapshot = await db.ref("orders").once("value");
-
-        if (!snapshot.exists()) {
-          ordersMessage.textContent = "Abhi koi order nahi mila.";
-          return;
-        }
-
-        // Pehle orders ki list banayein, phir async kaam karein.
-        const entries = [];
-
-        snapshot.forEach(customerSnapshot => {
-          customerSnapshot.forEach(orderSnapshot => {
-            entries.push({
-              customerUid: customerSnapshot.key,
-              orderKey: orderSnapshot.key,
-              order: orderSnapshot.val() || {}
-            });
-          });
-        });
-
-        if (!entries.length) {
-          ordersMessage.textContent = "Abhi koi order nahi mila.";
-          return;
-        }
-
-        let count = 0;
-
-        for (const entry of entries) {
-          const { customerUid, orderKey } = entry;
-          const order = entry.order;
-
-          let deliveryStatusText = "Abhi assign nahi hua";
-
-          if (order.assignedDeliveryUid) {
-            try {
-              const statusSnap = await db.ref(
-                "assignedOrders/" +
-                order.assignedDeliveryUid + "/" +
-                orderKey + "/status"
-              ).once("value");
-
-              deliveryStatusText =
-                statusSnap.val() || order.status || "Status nahi mila";
-            } catch (error) {
-              console.error("Delivery status error:", error);
-              deliveryStatusText =
-                "Status load nahi hua; Original: " + (order.status || "New");
-            }
-          }
-
-          count++;
-
-          const card = document.createElement("div");
-          card.className = "order-card";
-
-          addText(card, "h3", "Order: " + (order.id || orderKey));
-
-          addText(card, "p",
-            "Naam: " + (order.name || "-") +
-            " | Mobile: " + (order.phone || "-") +
-            " | Total: ₹" + (order.total ?? 0)
-          );
-
-          addText(card, "p", "Address: " + (order.address || "-"));
-
-          const itemsText = Array.isArray(order.items)
-            ? order.items.map(item =>
-                (item.name || "Item") + " × " + (item.quantity ?? 1)
-              ).join(", ")
-            : "Order items database format mein check karein";
-
-          addText(card, "p", "Items: " + itemsText);
-
-          addText(card, "p",
-            "Shop: " + (order.shop || "-")
-          );
-
-          addText(card, "p",
-            "Customer Order Status: " + (order.status || "New"),
-            "status-line"
-          );
-
-          addText(card, "p",
-            "Delivery Boy Status: " + deliveryStatusText,
-            "status-line"
-          );
-
-          // STATUS SELECT
-          addText(card, "label", "Order status:");
-
-          const select = document.createElement("select");
-          const statuses = [
-            "New",
-            "Accepted",
-            "Preparing",
-            "Assigned",
-            "Out for Delivery",
-            "Delivered",
-            "Cancelled"
-          ];
-
-          statuses.forEach(status => {
-            const option = document.createElement("option");
-            option.value = status;
-            option.textContent = status;
-            select.appendChild(option);
-          });
-
-          select.value = statuses.includes(order.status)
-            ? order.status
-            : "New";
-
-          card.appendChild(select);
-
-          const currentStatus = addText(
-            card, "p", "Selected status: " + select.value, "muted"
-          );
-
-          select.addEventListener("change", () => {
-            currentStatus.textContent = "Selected status: " + select.value;
-          });
-
-          // DELIVERY BOY SELECT
-          addText(card, "label", "Delivery Boy चुनें:");
-
-          const deliverySelect = document.createElement("select");
-          const defaultOption = document.createElement("option");
-          defaultOption.value = "";
-          defaultOption.textContent = "Delivery Boy चुनें";
-          deliverySelect.appendChild(defaultOption);
-
-          approvedDeliveryBoys.forEach(boy => {
-            const option = document.createElement("option");
-            option.value = boy.uid;
-            option.textContent =
-              boy.name + (boy.phone ? " (" + boy.phone + ")" : "");
-            deliverySelect.appendChild(option);
-          });
-
-          if (order.assignedDeliveryUid) {
-            deliverySelect.value = order.assignedDeliveryUid;
-          }
-
-          card.appendChild(deliverySelect);
-
-          // ASSIGN ORDER
-          const assignButton = addButton(card, "Assign Order", async () => {
-            const deliveryUid = deliverySelect.value;
-
-            if (!deliveryUid) {
-              ordersMessage.textContent = "Pehle Delivery Boy chunein.";
-              return;
-            }
-
-            const selectedBoy = approvedDeliveryBoys.find(
-              boy => boy.uid === deliveryUid
-            );
-
-            if (!selectedBoy) {
-              ordersMessage.textContent =
-                "Approved Delivery Boy nahi mila. List refresh karein.";
-              return;
-            }
-
-            assignButton.disabled = true;
-            assignButton.textContent = "Assign ho raha hai...";
-
-            try {
-              const assignedOrder = {
-                orderId: orderKey,
-                customerUid,
-                name: order.name || "",
-                phone: order.phone || "",
-                address: order.address || "",
-                items: order.items || [],
-                total: order.total ?? 0,
-                shop: order.shop || "",
-                status: "Assigned",
-                assignedAt: Date.now()
-              };
-
-              await db.ref(
-                "assignedOrders/" + deliveryUid + "/" + orderKey
-              ).set(assignedOrder);
-
-              await db.ref(
-                "orders/" + customerUid + "/" + orderKey
-              ).update({
-                assignedDeliveryUid: deliveryUid,
-                assignedDeliveryName: selectedBoy.name,
-                status: "Assigned"
-              });
-
-              ordersMessage.textContent =
-                "Order " + (order.id || orderKey) +
-                " " + selectedBoy.name + " ko assign ho gaya.";
-
-              await loadOrders();
-
-            } catch (error) {
-              console.error("Assign error:", error);
-              ordersMessage.textContent =
-                "Assign nahi hua. Firebase Rules aur internet check karein.";
-              assignButton.disabled = false;
-              assignButton.textContent = "Dobara Try Karein";
-            }
-          });
-
-          // SAVE ADMIN STATUS
-          const saveButton = addButton(card, "Status Save Karein", async () => {
-            const newStatus = select.value;
-            saveButton.disabled = true;
-            saveButton.textContent = "Save ho raha hai...";
-
-            try {
-              await db.ref(
-                "orders/" + customerUid + "/" + orderKey + "/status"
-              ).set(newStatus);
-
-              // Assigned order hai to uska status bhi update karein.
-              if (order.assignedDeliveryUid) {
-                await db.ref(
-                  "assignedOrders/" + order.assignedDeliveryUid +
-                  "/" + orderKey + "/status"
-                ).set(newStatus);
-              }
-
-              ordersMessage.textContent =
-                "Order " + (order.id || orderKey) +
-                " ka status save ho gaya.";
-
-              await loadOrders();
-
-            } catch (error) {
-              console.error("Status save error:", error);
-              ordersMessage.textContent =
-                "Status save nahi hua. Firebase Rules check karein.";
-              saveButton.disabled = false;
-              saveButton.textContent = "Dobara Try Karein";
-            }
-          });
-
-          ordersList.appendChild(card);
-        }
-
-        ordersMessage.textContent = "Kul orders: " + count;
-
-      } catch (error) {
-        console.error("Orders load error:", error);
-        ordersMessage.textContent =
-          "Orders load nahi hue. Admin login, internet aur Firebase Rules check karein.";
-      } finally {
-        loadingOrders = false;
-      }
+      updates[`assignedOrders/${boyUid}/${orderKey}`] = {
+        customerUid: customerUid,
+        orderKey: orderKey,
+        orderId: orderKey,
+        assignedDeliveryUid: boyUid,
+        name: order.name || "",
+        phone: order.phone || "",
+        address: order.address || "",
+        items: order.items || {},
+        shop: shopData.shopName || "",
+        shopUid: shopUid,
+        shopAddress: shopAddress,
+        shopLatitude: shopData.latitude || null,
+        shopLongitude: shopData.longitude || null,
+        total: order.total || 0,
+        status: newStatus,
+        assignedAt: Date.now()
+      };
     }
 
-    // DELIVERY BOYS LOAD
-    async function loadDeliveryBoys() {
-      deliveryMessage.textContent = "Delivery Boys load ho rahe hain...";
-      deliveryList.replaceChildren();
-      approvedDeliveryBoys = [];
+    // सभी बदलाव एक साथ सेव करें
+    await db.ref().update(updates);
 
-      try {
-        const snapshot = await db.ref("deliveryBoys").once("value");
+    alert(
+      boyUid
+        ? "Order Shop और Delivery Boy दोनों को भेज दिया गया!"
+        : "Order Shop Dashboard में भेज दिया गया!"
+    );
 
-        if (!snapshot.exists()) {
-          deliveryMessage.textContent =
-            "Abhi koi Delivery Boy signup nahi hua.";
-          return;
-        }
+    await loadOrders();
 
-        let count = 0;
-
-        snapshot.forEach(child => {
-          const boy = child.val() || {};
-          const uid = child.key;
-          count++;
-
-          if (boy.status === "approved") {
-            approvedDeliveryBoys.push({
-              uid,
-              name: boy.name || "Delivery Boy",
-              phone: boy.phone || ""
-            });
-          }
-
-          const card = document.createElement("div");
-          card.className = "delivery-card";
-
-          addText(card, "h3", boy.name || "Naam nahi diya");
-          addText(card, "p",
-            "Mobile: " + (boy.phone || "-") +
-            " | Email: " + (boy.email || "-")
-          );
-          addText(card, "p", "Status: " + (boy.status || "pending"));
-
-          if (boy.status === "pending") {
-            addButton(card, "Approve Delivery Boy", async event => {
-              // Is handler ko neeche actual button handler se replace kiya gaya hai.
-            }).remove();
-            
-            const approveButton = document.createElement("button");
-            approveButton.type = "button";
-            approveButton.textContent = "Approve Delivery Boy";
-            card.appendChild(approveButton);
-
-            approveButton.addEventListener("click", async () => {
-              approveButton.disabled = true;
-              approveButton.textContent = "Approve ho raha hai...";
-
-              try {
-                await db.ref("deliveryBoys/" + uid + "/status")
-                  .set("approved");
-
-                deliveryMessage.textContent =
-                  (boy.name || "Delivery Boy") + " approve ho gaya!";
-
-                await loadDeliveryBoys();
-                await loadOrders();
-
-              } catch (error) {
-                console.error("Approval error:", error);
-                deliveryMessage.textContent =
-                  "Approve nahi hua. Firebase Rules check karein.";
-                approveButton.disabled = false;
-                approveButton.textContent = "Dobara Try Karein";
-              }
-            });
-          }
-
-          deliveryList.appendChild(card);
-        });
-
-        deliveryMessage.textContent =
-          "Kul Delivery Boys: " + count +
-          " | Approved: " + approvedDeliveryBoys.length;
-
-      } catch (error) {
-        console.error("Delivery Boys load error:", error);
-        deliveryMessage.textContent =
-          "List load nahi hui. Admin login aur Firebase Rules check karein.";
-      }
+    if (document.getElementById("approvedPage").classList.contains("active")) {
+      await loadApprovedOrders();
     }
-  </script>
+
+  } catch (error) {
+    alert("Order Save Error: " + error.message);
+    console.error(error);
+  }
+}
+
+
+  
+
+  
+async function loadDeliveryBoys(){
+  const list = document.getElementById("deliveryList");
+  list.textContent = "Delivery Boys लोड हो रहे हैं...";
+  showMessage("deliveryMessage","");
+
+  try{
+    if(!auth.currentUser || auth.currentUser.uid !== ADMIN_UID){
+      list.textContent = "Admin Login जरूरी है।";
+      return;
+    }
+
+    const snapshot = await db.ref("deliveryBoys").once("value");
+    const data = snapshot.val() || {};
+
+    const boys = Object.entries(data).map(([uid,boy])=>({...boy,uid}));
+    approvedBoys = boys.filter(boy=>boy.status === "approved");
+
+    if(!boys.length){
+      list.textContent = "अभी कोई Delivery Boy Registered नहीं है।";
+      return;
+    }
+
+    list.innerHTML = boys.map(boy=>`
+      <div class="item">
+        <h3>${safe(boy.name || "नाम उपलब्ध नहीं")}</h3>
+        <p><b>UID:</b> ${safe(boy.uid)}</p>
+        <p><b>Mobile:</b> ${safe(boy.phone || "N/A")}</p>
+        <p><b>Email:</b> ${safe(boy.email || "N/A")}</p>
+        <p><b>Status:</b> ${safe(boy.status || "N/A")}</p>
+        ${
+          boy.status === "pending"
+          ? `<button class="green" onclick="approveBoy('${safe(boy.uid)}')">Approve Delivery Boy</button>`
+          : boy.status === "approved"
+          ? `<p class="status">✓ Approved</p>`
+          : `<p>Approval की जरूरत है।</p>`
+        }
+      </div>
+    `).join("");
+
+    showMessage("deliveryMessage",boys.length + " Delivery Boys मिले।");
+  }catch(error){
+    list.textContent = "Error: " + error.message;
+    showMessage("deliveryMessage",error.message);
+  }
+}
+
+/* APPROVE DELIVERY BOY */
+async function approveBoy(uid){
+  if(!auth.currentUser || auth.currentUser.uid !== ADMIN_UID){
+    alert("Admin Login जरूरी है।");
+    return;
+  }
+
+  if(!confirm("इस Delivery Boy को Approve करना है?")) return;
+
+  try{
+    await db.ref("deliveryBoys/" + uid + "/status").set("approved");
+    alert("Delivery Boy Approved!");
+    await loadDeliveryBoys();
+  }catch(error){
+    alert("Approve Error: " + error.message);
+    console.error(error);
+  }
+}
+
+/* REFRESH BUTTONS */
+document.getElementById("refreshOrders").addEventListener("click",loadOrders);
+document.getElementById("refreshApproved").addEventListener("click",loadApprovedOrders);
+document.getElementById("refreshDeliveryBoys").addEventListener("click",loadDeliveryBoys);
+</script>
 </body>
 </html>
